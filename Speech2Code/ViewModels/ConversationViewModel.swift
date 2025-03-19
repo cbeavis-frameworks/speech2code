@@ -38,7 +38,7 @@ class ConversationViewModel: ObservableObject {
         self.conversationModel = ConversationModel()
         self.speechService = SpeechRecognitionService()
         self.openAIService = OpenAIChatService()
-        self.streamingTTSService = ElevenLabsStreamingService()
+        self.streamingTTSService = ElevenLabsStreamingService(apiKey: APIConfig.shared.elevenLabsKey)
         
         setupBindings()
         setupHandlers()

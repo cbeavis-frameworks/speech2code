@@ -6,7 +6,7 @@ class ElevenLabsStreamingService: NSObject, ObservableObject, AVAudioPlayerDeleg
     // MARK: - Properties
     // API configuration
     private let apiBaseUrl = "https://api.elevenlabs.io/v1/text-to-speech"
-    private let apiKey = "sk_12393152518c550f5428de44669eaaef1ec1de46487644ad"
+    private let apiKey: String
     
     // Voice configuration 
     private var voiceId = "or03gN1gc1Z0lccMLxD2" // Default voice ID
@@ -162,7 +162,7 @@ class ElevenLabsStreamingService: NSObject, ObservableObject, AVAudioPlayerDeleg
                     }
                 }
             }
-            // If successful, audio will play and completion will be called when done
+            // If successful, audio playback will handle completion
         }
     }
     
@@ -418,5 +418,9 @@ class ElevenLabsStreamingService: NSObject, ObservableObject, AVAudioPlayerDeleg
             isAudioPlaying = false
             playNextAudio() // Try next in queue
         }
+    }
+    
+    init(apiKey: String) {
+        self.apiKey = apiKey
     }
 }

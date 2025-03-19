@@ -39,6 +39,39 @@ This macOS application allows you to have conversations with AI using your voice
 4. The app will process your speech, send it to the AI, and speak the response
 5. Your conversation history appears in the main window
 
+## Getting Started
+
+### Prerequisites
+
+- macOS 12.0 or later
+- Xcode 14.0 or later
+- Swift 5.7 or later
+- OpenAI API Key (for AI responses)
+- ElevenLabs API Key (for text-to-speech)
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/cbeavis-frameworks/speech2code.git
+   cd speech2code
+   ```
+
+2. Set up API keys:
+   - Copy `.env.template` to `.env` in the project root
+   - Add your API keys to the `.env` file:
+     ```
+     OPENAI_API_KEY=your_openai_api_key_here
+     ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+     ```
+
+3. Open the project in Xcode:
+   ```
+   open Speech2Code.xcodeproj
+   ```
+
+4. Build and run the application.
+
 ## Troubleshooting
 
 - If the app doesn't respond to your voice, check that you've granted microphone permissions in System Preferences > Privacy & Security > Microphone
@@ -52,6 +85,31 @@ This macOS application allows you to have conversations with AI using your voice
 - WebSocket connections to OpenAI's Realtime API
 - ElevenLabs API for text-to-speech conversion
 - AVFoundation for audio processing and playback
+
+## How it Works
+
+1. The app listens for your voice input and converts it to text
+2. Text is sent to OpenAI for AI-powered responses
+3. Responses are streamed back in real-time with visual feedback
+4. The AI's response is converted to speech using ElevenLabs
+5. All interactions are displayed in a chat-like interface
+
+## Architecture
+
+Speech2Code uses a Model-View-ViewModel (MVVM) architecture:
+
+- **Models**: Define core data structures
+- **Views**: Handle UI presentation
+- **ViewModels**: Coordinate between models and services
+- **Services**: Manage external API interactions
+
+## Contributing
+
+Contributions to Speech2Code are welcome! Please feel free to submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Privacy
 
