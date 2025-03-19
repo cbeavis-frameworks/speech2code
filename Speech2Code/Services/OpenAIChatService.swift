@@ -167,9 +167,13 @@ class OpenAIChatService {
                     accumulatedResponse += content
                     completeResponse += content
                     
-                    // Call the handler with the chunk
+                    // Call the handler with the chunk only
                     chunkHandler?(content)
-                    onResponseReceived?(accumulatedResponse)
+                    
+                    // Update the debug messages
+                    if debugMessages.count > 100 {
+                        debugMessages.removeFirst(50)
+                    }
                     
                     // Reset accumulated response if it gets too long
                     if accumulatedResponse.count > 100 {

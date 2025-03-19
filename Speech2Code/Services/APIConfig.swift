@@ -30,31 +30,42 @@ struct APIConfig {
             return value
         }
         
-        // Then check .env file in the app bundle
-        if let envPath = Bundle.main.path(forResource: ".env", ofType: nil),
-           let contents = try? String(contentsOfFile: envPath, encoding: .utf8) {
-            
-            // Parse the file line by line
-            let lines = contents.components(separatedBy: .newlines)
-            for line in lines {
-                // Skip comments and empty lines
-                if line.hasPrefix("#") || line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    continue
+        // Check possible .env file locations
+        let possibleEnvPaths = [
+            Bundle.main.path(forResource: ".env", ofType: nil),                // In app bundle Resources
+            Bundle.main.bundlePath + "/.env",                                  // In app bundle root
+            Bundle.main.bundlePath + "/Contents/Resources/.env"                // In app bundle Resources (alternative path)
+        ]
+        
+        // Try each possible path
+        for possiblePath in possibleEnvPaths {
+            if let path = possiblePath,
+               let contents = try? String(contentsOfFile: path, encoding: .utf8) {
+                // Found a valid .env file, parse it
+                let lines = contents.components(separatedBy: .newlines)
+                for line in lines {
+                    // Skip comments and empty lines
+                    if line.hasPrefix("#") || line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        continue
+                    }
+                    
+                    // Parse key-value pairs
+                    let components = line.components(separatedBy: "=")
+                    if components.count >= 2,
+                       let envKey = components.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       envKey == key {
+                        
+                        // Join the rest in case there are = in the value
+                        let value = components.dropFirst().joined(separator: "=")
+                        return value.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 }
                 
-                // Parse key-value pairs
-                let components = line.components(separatedBy: "=")
-                if components.count >= 2,
-                   let envKey = components.first?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   envKey == key {
-                    
-                    // Join the rest in case there are = in the value
-                    let value = components.dropFirst().joined(separator: "=")
-                    return value.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+                // If we found the file but not the specific key, continue to next possible path
             }
         }
         
+        print("⚠️ Could not find \(key) in environment or .env files")
         return nil
     }
 }

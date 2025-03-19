@@ -29,9 +29,22 @@
 		DC93C42E2D82CB3100B6F7B7 /* Speech2CodeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Speech2CodeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DC9149A72D8B41FC0022AD01 /* Exceptions for "Speech2Code" folder in "Speech2Code" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/.env.template,
+			);
+			target = DC93C4102D82CB2F00B6F7B7 /* Speech2Code */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DC93C4132D82CB2F00B6F7B7 /* Speech2Code */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DC9149A72D8B41FC0022AD01 /* Exceptions for "Speech2Code" folder in "Speech2Code" target */,
+			);
 			path = Speech2Code;
 			sourceTree = "<group>";
 		};

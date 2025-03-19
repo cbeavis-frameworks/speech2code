@@ -33,6 +33,9 @@ class ConversationViewModel: ObservableObject {
     // Auto-restart listening after AI response
     private var autoRestart = true
     
+    // Auto-restart listening after processing
+    private var autoRestartListening = true
+    
     // Init
     init() {
         self.conversationModel = ConversationModel()
@@ -90,11 +93,11 @@ class ConversationViewModel: ObservableObject {
         streamingTTSService.onSpeakingStateChange = { [weak self] isSpeaking in
             guard let self = self else { return }
             DispatchQueue.main.async {
-                self.isSpeaking = isSpeaking
                 print("🔊 TTS speaking state: \(isSpeaking ? "Speaking" : "Silent")")
+                self.isSpeaking = isSpeaking
                 
                 // If speech finished and we're not processing, restart listening
-                if !isSpeaking && !self.isProcessing && self.autoRestart {
+                if !isSpeaking && !self.isProcessing && self.autoRestartListening {
                     print("🎤 Auto-restarting listening after speech completed")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.startListening()
@@ -105,7 +108,44 @@ class ConversationViewModel: ObservableObject {
     }
     
     private func setupHandlers() {
-        // Set up OpenAI response handler
+        // Set up OpenAI response handlers
+        openAIService.chunkHandler = { [weak self] chunk in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                // Set processing state
+                self.isProcessing = true
+                
+                // Handle the chunk
+                self.handleAIResponseChunk(chunk)
+            }
+        }
+        
+        openAIService.fullMessageHandler = { [weak self] message in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                // Message is complete, process it if needed
+                print("📝 Full AI message received: \(message.prefix(30))...")
+                
+                // Use the complete message for TTS if not in streaming mode
+                if !self.useStreamingTTS {
+                    self.speakCompleteMessage(message)
+                }
+            }
+        }
+        
+        openAIService.completionHandler = { [weak self] in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                // Processing complete
+                self.isProcessing = false
+                
+                // Complete the response for TTS
+                self.completeAIResponse()
+            }
+        }
         
         // Set up speech recognition handlers
         
@@ -233,23 +273,6 @@ class ConversationViewModel: ObservableObject {
                 print("📱 UI Messages updated: \(messages.count) messages in conversation")
             }
             .store(in: &cancellables)
-        
-        // Bind to OpenAI service state
-        openAIService.$isProcessing
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isProcessing in
-                self?.isProcessing = isProcessing
-            }
-            .store(in: &cancellables)
-        
-        // Bind to OpenAI service errors
-        openAIService.$errorMessage
-            .compactMap { $0 }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] error in
-                self?.errorMessage = error
-            }
-            .store(in: &cancellables)
     }
     
     // MARK: - Public Methods
@@ -291,8 +314,8 @@ class ConversationViewModel: ObservableObject {
             self.isListening = false
             
             // Clear progressive message if it exists but empty
-            if let messageId = self.progressiveUserMessageId, 
-               self.currentTranscription.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty {
+            if let _ = self.progressiveUserMessageId, 
+               self.currentTranscription.trimmingCharacters(in: .whitespaces).isEmpty {
                 // There's no direct removeMessage method, so we'll handle this differently
                 // Instead of removing, we'll just reset the progressive ID
                 self.progressiveUserMessageId = nil
@@ -331,6 +354,43 @@ class ConversationViewModel: ObservableObject {
                     
                     // Update the message with the full accumulated response
                     self.conversationModel.updateMessageWithId(messageId, content: self.accumulatedAIResponse)
+                }
+            }
+        }
+    }
+    
+    func handleAIResponseChunk(_ chunk: String) {
+        // Make sure we force stop listening during AI response
+        forceStopListening()
+        
+        // For the first chunk, create a new message
+        if isFirstChunk {
+            print("💬 Adding initial AI message to conversation")
+            // Reset the accumulated response for the new message
+            accumulatedAIResponse = ""
+            
+            // Create a new, empty AI message
+            let newMessage = conversationModel.addMessage("", isFromUser: false)
+            aiResponseMessageId = newMessage.id
+            isFirstChunk = false
+            
+            // Set processing flag to true
+            self.isProcessing = true
+        }
+        
+        // Add this chunk to our accumulated response
+        if !chunk.isEmpty {
+            // Add the new chunk to our accumulated response
+            accumulatedAIResponse += chunk
+            
+            // Update the message with the full accumulated text
+            if let messageId = aiResponseMessageId {
+                // Replace the content with the complete accumulated response so far
+                conversationModel.updateMessageWithId(messageId, content: accumulatedAIResponse)
+                
+                // If we're using streaming TTS mode, speak this chunk
+                if useStreamingTTS {
+                    streamTextToTTS(chunk)
                 }
             }
         }
@@ -431,7 +491,11 @@ class ConversationViewModel: ObservableObject {
             self.forceStopListening()
             
             // Send to OpenAI
-            self.openAIService.sendUserMessage(text)
+            self.openAIService.sendMessage(text) { [weak self] response in
+                guard self != nil else { return }
+                // Handle response if needed
+                print("📝 Received complete response from OpenAI: \(response.prefix(30))...")
+            }
             
             // Reset for the next AI response
             self.isFirstChunk = true
