@@ -1,1 +1,0 @@
-# SpeechToCode - Technical Specification
